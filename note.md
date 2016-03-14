@@ -47,6 +47,8 @@ the include path is relative to the `llvm-config --includedir`
 	SourceManager &SM = Context->getSourceManager();
 	
 	TranslationUnitDecl::getASTContext() -> ASTContext&
+
+	Context->getSourceManager().isInSystemHeader(Loc)
 	
 #### RecursiveASTVisitor
 	
@@ -77,6 +79,11 @@ Implementing the member methods `TraverseDecl(Decl *x)`, `TraverseStmt(Stmt *x)`
 	        return true;
 	    }
 	};
+
+
+#### Misc
+
+llvm::StringRef::str() -> string
 
 ## Debugging
 

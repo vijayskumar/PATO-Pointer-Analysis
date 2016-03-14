@@ -68,39 +68,40 @@ BIN = ./bin/
 SRC = ./src/
 TEST = ./test/
 
-objs = $(addprefix $(BIN), sample pg)
+FRE = ast2db
+objs = $(addprefix $(BIN), sample $(FRE))
 
-all: $(objs)
+all : $(objs)
 
-$(BIN)sample: $(SRC)sample.cpp
+$(BIN)sample : $(SRC)sample.cpp
 	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) $^ \
 	 $(CLANG_LIBS) $(LLVM_LDFLAGS) -o $@
 	 
 ## $< the first prerequisite
 ## $^ all prerequisite
-$(BIN)pg: $(SRC)pg.cpp $(SRC)visitor.h
+$(BIN)$(FRE) : $(SRC)$(FRE).cpp $(SRC)visitor.h
 	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) $< \
 	 $(CLANG_LIBS) $(LLVM_LDFLAGS) -o $@
 
 ## For debugging
-# LLVM_CXXFLAGS_X := -I/usr/lib/llvm-3.7/include \
+# LLVM_CXXFLAGS := -I/usr/lib/llvm-3.7/include \
 # -DNDEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS \
 # -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -fomit-frame-pointer \
 # -std=c++11 -fvisibility-inlines-hidden -fno-exceptions -fPIC \
 # -ffunction-sections -fdata-sections -Wcast-qual
 
-## This is the save as the one step compilation
+## This is the same as the one step compilation
 ## The order matters, the object is before the libs, so the unresolved 
 ## symbols are known when scanning the libs
-# $(BIN)pg: $(SRC)pg.o
+# $(BIN)$(FRE) : $(SRC)$(FRE).o
 # 	$(CXX) $< $(CLANG_LIBS) $(LLVM_LDFLAGS) -o $@
 
-# $(SRC)pg.o: $(SRC)pg.cpp $(SRC)visitor.h
+# $(SRC)$(FRE).o : $(SRC)$(FRE).cpp $(SRC)visitor.h
 # 	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) -c $< -o $@
-
-test: $(BIN)pg
-	$(BIN)pg $(TEST)type.c -- -Wall -I/usr/lib/llvm-3.7/lib/clang/3.7.1/include
+.PHONY : test
+test : $(BIN)$(FRE)
+	@$(BIN)$(FRE) $(TEST)type.c -- -Wall -I/usr/lib/llvm-3.7/lib/clang/3.7.1/include
 	
-
-clean:
-	rm -rf *.o *.ll $(objs) *.out
+.PHONY : clean
+clean :
+	rm -rf $(SRC)*.o $(SRC)*.ll $(objs) $(BIN)*.out

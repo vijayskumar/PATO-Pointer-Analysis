@@ -40,36 +40,36 @@ public:
 		return true; // return false to stop the traversal
 	}
 	
-	// bool VisitType(Type *T) {
-	// 	T->dump();
-	// 	llvm::errs() << "Found Type here\n";
-	// 	if (T->isFromAST()) {
-	// 		llvm::errs() << "\tthis is from ast\n";
-	// 	}
-	// 	if (T->isBuiltinType()) {
-	// 		llvm::errs() << "\tthis is builtin type\n";
-	// 	}
-	// 	if (T->isStructureType()) {
-	// 		llvm::errs() << "\tthis is struct type\n";
-	// 	}
-	// 	if (T->isPointerType()) {
-	// 		llvm::errs() << "\tthis is pointer type\n";
-	// 	}
-	// 	return true;
-	// }
+	bool VisitType(Type *T) {
+		T->dump();
+		llvm::errs() << "Found Type here\n";
+		if (T->isFromAST()) {
+			llvm::errs() << "\tthis isFromAST\n";
+		}
+		if (T->isBuiltinType()) {
+			llvm::errs() << "\tthis isBuiltinType\n";
+		}
+		if (T->isStructureType()) {
+			llvm::errs() << "\tthis isStructureType\n";
+		}
+		if (T->isPointerType()) {
+			llvm::errs() << "\tthis isPointerType\n";
+		}
+		return true;
+	}
 	
-	// bool VisitTypeLoc(TypeLoc TL) {
-	// 	llvm::errs() << "Found TypeLoc here\n";
-	// 	SourceManager& sm = Context->getSourceManager();
-	// 	llvm::errs() 
-	// 		<< "<" << sm.getSpellingLineNumber(TL.getLocStart())
-	// 		<< ":" << sm.getSpellingColumnNumber(TL.getLocStart())
-	// 		<< ":" << sm.getSpellingLineNumber(TL.getLocEnd())
-	// 		<< ":" << sm.getSpellingColumnNumber(TL.getLocEnd())
-	// 		<< ">\n";
-	// 	// QualType qt = TL.getType();
-	// 	return true;
-	// }
+	bool VisitTypeLoc(TypeLoc TL) {
+		llvm::errs() << "Found TypeLoc here\n";
+		SourceManager& sm = Context->getSourceManager();
+		llvm::errs() 
+			<< "<" << sm.getSpellingLineNumber(TL.getLocStart())
+			<< ":" << sm.getSpellingColumnNumber(TL.getLocStart())
+			<< ":" << sm.getSpellingLineNumber(TL.getLocEnd())
+			<< ":" << sm.getSpellingColumnNumber(TL.getLocEnd())
+			<< ">\n";
+		QualType qt = TL.getType();
+		return true;
+	}
 	
 private:
 	ASTContext *Context;
