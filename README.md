@@ -1,19 +1,29 @@
-# PATO---Pointer-Analysis
+# Pointer-Analysis
 
-A context insensitive field sensitive Andersen pointer analysis using Clang and Prolog
+A basic Andersen pointer analysis based on Clang and Prolog
+
++ context insensitive 
++ field sensitive 
++ flow insensitive 
+
+will be improved ...
 
 ## Install
 
 ### Install the Clang/LLVM 
 
-Built on top of Clang-3.7
+The C parser is built on top of Clang-3.7, so install the Clang-3.7 
+(other version may also work).
+
+A recommended method under Debian/Ubuntu is to use the apt repository
+
+http://llvm.org/apt/
 
 
 ## Usage
 
-### Extract information from AST 
-
-A Clang tooling frontend
+1. Extract information from AST and build the knowledge base using the
+Clang tooling frontend:
 
     ast2db input.c > out.csv
     # translate from csv to ntiples format so it 
@@ -21,7 +31,18 @@ A Clang tooling frontend
     cat out.csv | csv2ntriples.py > out.trp
 
 
-### Run the pointer analysis 
+2. Run the pointer analysis using the Prolog based inference engine
+
+The detailed explaination of how it works is comming ...
+
+
+## Reference
+
+...
+
+
+
+
 
 
 

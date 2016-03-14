@@ -36,7 +36,7 @@
 <Function(13:1:13:14)> <isa> "Function" .
 <Function(13:1:13:14)> <hasName> "foo" .
 <Function(13:1:13:14)> <hasTypeClass> "['FunctionProto']" .
-<Function(13:1:13:14)> <hasType> <int (int)> .
+<Function(13:1:13:14)> <hasType> "int (int)" .
 <Function(13:1:13:14)> <hasParm(0)> <ParmVar(13:9:13:13)> .
 <ParmVar(13:9:13:13)> <isa> "ParmVar" .
 <ParmVar(13:9:13:13)> <hasName> "a" .
@@ -47,7 +47,7 @@
 <Function(15:1:17:1)> <isa> "Function" .
 <Function(15:1:17:1)> <hasName> "plus" .
 <Function(15:1:17:1)> <hasTypeClass> "['FunctionProto']" .
-<Function(15:1:17:1)> <hasType> <int (int, int)> .
+<Function(15:1:17:1)> <hasType> "int (int, int)" .
 <Function(15:1:17:1)> <hasBody> <CompoundStmt(15:24:17:1)> .
 <Function(15:1:17:1)> <hasParm(0)> <ParmVar(15:10:15:14)> .
 <Function(15:1:17:1)> <hasParm(1)> <ParmVar(15:17:15:21)> .
@@ -82,7 +82,7 @@
 <Function(19:1:63:1)> <isa> "Function" .
 <Function(19:1:63:1)> <hasName> "main" .
 <Function(19:1:63:1)> <hasTypeClass> "['FunctionNoProto']" .
-<Function(19:1:63:1)> <hasType> <int ()> .
+<Function(19:1:63:1)> <hasType> "int ()" .
 <Function(19:1:63:1)> <isa> "MainFunction" .
 <Function(19:1:63:1)> <hasBody> <CompoundStmt(19:12:63:1)> .
 <CompoundStmt(19:12:63:1)> <isa> "CompoundStmt" .
@@ -150,7 +150,7 @@
 <Var(26:2:26:30)> <hasInit> <InitListExpr(26:19:26:30)> .
 <IntegerLiteral(26:14:26:14)> <isa> "IntegerLiteral" .
 <InitListExpr(26:19:26:30)> <isa> "InitListExpr" .
-<InitListExpr(26:19:26:30)> <hasSubInit(0)> <ImplicitValueInitExpr()> .
+<InitListExpr(26:19:26:30)> <hasSubInit(0)> "ImplicitValueInitExpr()" .
 <InitListExpr(26:19:26:30)> <hasSubInit(1)> <UnaryOperator(26:27:26:28)> .
 <DesignatedInitExpr(26:21:26:28)> <isa> "DesignatedInitExpr" .
 <UnaryOperator(26:27:26:28)> <isa> "UnaryOperator" .
@@ -160,7 +160,7 @@
 <DeclRefExpr(26:28:26:28)> <hasDecl> <Var(21:2:21:12)> .
 <IntegerLiteral(26:22:26:22)> <isa> "IntegerLiteral" .
 <InitListExpr(26:19:26:30)> <isa> "InitListExpr" .
-<InitListExpr(26:19:26:30)> <hasSubInit(0)> <ImplicitValueInitExpr()> .
+<InitListExpr(26:19:26:30)> <hasSubInit(0)> "ImplicitValueInitExpr()" .
 <InitListExpr(26:19:26:30)> <hasSubInit(1)> <UnaryOperator(26:27:26:28)> .
 <ImplicitValueInitExpr()> <isa> "ImplicitValueInitExpr" .
 <UnaryOperator(26:27:26:28)> <isa> "UnaryOperator" .
@@ -182,7 +182,7 @@
 <CStyleCastExpr(28:14:28:47)> <hasSubExpr> <CallExpr(28:23:28:47)> .
 <CallExpr(28:23:28:47)> <isa> "CallExpr" .
 <CallExpr(28:23:28:47)> <callsFunc> <Function(466:1:211:58)> .
-<CallExpr(28:23:28:47)> <calls> <malloc()> .
+<CallExpr(28:23:28:47)> <calls> "malloc()" .
 <CallExpr(28:23:28:47)> <hasArg(0)> <BinaryOperator(28:30:28:46)> .
 <ImplicitCastExpr(28:23:28:23)> <isa> "ImplicitCastExpr" .
 <ImplicitCastExpr(28:23:28:23)> <hasCastKind> "FunctionToPointerDecay" .
