@@ -50,6 +50,15 @@ the include path is relative to the `llvm-config --includedir`
 
 	Context->getSourceManager().isInSystemHeader(Loc)
 	
++ DynTypedNodeList clang::ASTContext::getParents 	( 	const NodeT &  	Node	) 	
+	inline
+
+	Returns the parents of the given node.
+
+	Note that this will lazily compute the parents of all nodes and store them for later retrieval. Thus, the first call is O(n) in the number of AST nodes.
+	
+	http://clang.llvm.org/doxygen/classclang_1_1ASTContext.html#a32d11844fdb82310b9059784fd4ceb6b
+	
 #### RecursiveASTVisitor
 	
 `RecursiveASTVisitor` is implemented using the CRTP pattern

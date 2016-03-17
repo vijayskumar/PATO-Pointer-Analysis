@@ -2,21 +2,15 @@
 //#define GETLOC(s) clang::FullSourceLoc FL = Context->getFullLoc((s)->getLocStart()); \
 		//if (FL.isValid()) {llvm::outs() << FL.getSpellingLineNumber() << ":" << FL.getSpellingColumnNumber() << "\n";}
 
-// using namespace clang::tooling;
 using namespace clang;
-
-std::string currentId;
-
-// @TODO
-// function pointer
 
 // RecursiveASTVisitor provides hooks of the form bool VisitNodeType(Node *)
 // for most AST nodes, we only need to implement the methods for the relevant
 // node types
 class PGVisitor : public clang::RecursiveASTVisitor<PGVisitor> {
 public:
-	explicit PGVisitor(ASTContext *Context) : Context(Context) {
-	}
+	explicit PGVisitor(ASTContext *Context) : Context(Context),
+	currentFunction(nullptr) {}
 
 	// Skip the system headers
 	bool TraverseDecl(Decl *D) {
@@ -109,27 +103,29 @@ public:
     	return true;
     }
     // ---->
-	bool VisitFunctionDecl(FunctionDecl *f) {
-		//f->dump();
-		if (f->isMain()) {
+    // @todo child relation
+	bool VisitFunctionDecl(FunctionDecl *FD) {
+		//FD->dump();
+		currentFunction = FD;
+		if (FD->isMain()) {
 			llvm::outs() << currentId << ", isa, " << "MainFunction\n";
 		}
 		// isDefined -> bool
-		if (f->hasBody()) {
-			Stmt *body = f->getBody();
+		if (FD->hasBody()) {
+			Stmt *body = FD->getBody();
 			if (body) {
 				llvm::outs() << currentId << ", hasBody, " << genId(body) << "\n";
 			}
 		}
 		// iterate params
-		for (int i = 0; i < f->getNumParams(); i++) {
-			ParmVarDecl *p = f->getParamDecl(i);
+		for (int i = 0; i < FD->getNumParams(); i++) {
+			ParmVarDecl *p = FD->getParamDecl(i);
 			llvm::outs() << currentId << ", hasParm(" << i << "), " << genId(p) << "\n";
 		}
 
-		QualType qt = f->getReturnType();
+		QualType qt = FD->getReturnType();
 		// llvm::outs() << currentId << ", hasReturnType, " << qt.getAsString() << "\n";
-		// getCanonicalDecl -> FunctionDecl *
+		// FunctionDecl *CFD = FD->getCanonicalDecl();
 		return true; 
 	}
 	// ---->
@@ -152,7 +148,7 @@ public:
 		// isFileVarDecl() -> bool // file scoped variable declaration
 		Expr *Init = VDecl->getInit();
 		if (Init) {
-			llvm::outs() << currentId << ", hasInit, " << genId(Init) << "\n";
+			llvm::outs() << currentId << ", hasInit, " << genId(Init->IgnoreParenCasts()) << "\n";
 		}
 		
 		return true;
@@ -178,9 +174,9 @@ public:
 	// This represents a group of statements like { stmt stmt }.
 	bool VisitCompoundStmt(CompoundStmt *c) {
 
-		for (auto *B : c->body()) {
-			// B is Stmt *
-		}
+		// for (auto *B : c->body()) {
+		// 	// B is Stmt *
+		// }
 		return true;
 	}
 	// ContinueStmt, DoStmt, ForStmt, GotoStmt, IfStmt, LabelStmt,
@@ -191,7 +187,14 @@ public:
 		return true;
 	}
 
-	bool VisitReturnStmt(ReturnStmt *r) {
+	bool VisitReturnStmt(ReturnStmt *R) {
+		Expr *Ret = R->getRetValue();
+		if (Ret) {
+			llvm::outs() << currentId << ", returns, " << genId(Ret->IgnoreParenCasts()) << "\n";
+		}
+		if (currentFunction) {
+			llvm::outs() << currentId << ", inProc, " << genId(currentFunction) << "\n";
+		}
 		return true;
 	}
 
@@ -214,8 +217,8 @@ public:
 		Expr *base = sub->getBase(),
 			*idx = sub->getIdx();
 		if (base && idx) {
-			llvm::outs() << currentId << ", hasBase, " << genId(base) << "\n";
-			llvm::outs() << currentId << ", hasIndex, " << genId(idx) << "\n";
+			llvm::outs() << currentId << ", hasBase, " << genId(base->IgnoreParenCasts()) << "\n";
+			llvm::outs() << currentId << ", hasIndex, " << genId(idx->IgnoreParenCasts()) << "\n";
 		}
 		
 		return true;
@@ -224,8 +227,8 @@ public:
 	bool VisitBinaryOperator(BinaryOperator *bop) {
 		
 		llvm::outs() << currentId << ", hasOperator, " << bop->getOpcodeStr() << "\n";
-		Expr *lhs = bop->getLHS();
-		Expr *rhs = bop->getRHS();
+		Expr *lhs = bop->getLHS()->IgnoreParenCasts();
+		Expr *rhs = bop->getRHS()->IgnoreParenCasts();
 		llvm::outs() << currentId << ", hasLHS, " << genId(lhs) << "\n";
 		llvm::outs() << currentId << ", hasRHS, " << genId(rhs) << "\n";
 
@@ -252,9 +255,10 @@ public:
 		if (fdecl) {
 			llvm::outs() << currentId << ", callsFunc, " << genId(fdecl) << "\n";
 			DeclarationNameInfo dn_info = fdecl->getNameInfo();
-			if (dn_info.getAsString() == "malloc") {
-				llvm::outs() << currentId << ", calls, malloc()\n";
-			}
+			llvm::outs() << currentId << ", calls, " << dn_info.getAsString() << "\n";
+			// if (dn_info.getAsString() == "malloc") {
+			// 	llvm::outs() << currentId << ", calls, malloc()\n";
+			// }
 		}
 
 		int i = 0;
@@ -282,6 +286,8 @@ public:
 	bool VisitDeclRefExpr(DeclRefExpr *DRE) {
 		ValueDecl *vd = DRE->getDecl();
 		if (vd)	llvm::outs() << currentId << ", hasDecl, " << genId(vd) << "\n";
+		DeclarationNameInfo DNI = DRE->getNameInfo();
+		llvm::outs() << currentId << ", hasName, " << DNI.getAsString() << "\n";
 		return true;
 	}
 
@@ -292,10 +298,10 @@ public:
 	// };
 	// struct point ptarr[10] = { [2].y = 1.0, [2].x = 2.0, [0].x = 1.0 }
 	// The {...} is the InitListExpr, it contains three DesignatedInitExpr
-	// bool VisitDesignatedInitExpr(DesignatedInitExpr *DIE) {
+	bool VisitDesignatedInitExpr(DesignatedInitExpr *DIE) {
 	// designators() -> designators_range
-	// 	return true;
-	// }
+		return true;
+	}
 
 	// bool VisitFloatingLiteral(FloatingLiteral *fl) {
 	// 	llvm::APFloat f = fl->getValue();
@@ -319,7 +325,8 @@ public:
 		Expr **Inits = ILE->getInits();
 		for (int i = 0; i < ILE->getNumInits(); ++i)
 		{
-			llvm::outs() << currentId << ", hasSubInit(" << i << "), " << genId(Inits[i]) << "\n";
+			Expr *Init = Inits[i];
+			llvm::outs() << currentId << ", hasSubInit(" << i << "), " << genId(Init->IgnoreParenCasts()) << "\n";
 		}
 		return true;
 	}
@@ -329,7 +336,7 @@ public:
 	// C99 6.5.2.3 structure/union members 
 	// x->f and x.f
 	bool VisitMemberExpr(MemberExpr *ME) {
-		Expr *base = ME->getBase();
+		Expr *base = ME->getBase()->IgnoreParenCasts();
 		llvm::outs() << currentId << ", hasBase, " << genId(base) << "\n";
 		ValueDecl *vdecl = ME->getMemberDecl(); // return a FieldDecl
 		llvm::outs() << currentId << ", hasMemberDecl, " << genId(vdecl) << "\n";
@@ -340,11 +347,11 @@ public:
 	// http://clang.llvm.org/doxygen/classclang_1_1OffsetOfExpr.html#details
 
 	// a parenthesized expression, e.g. "(1)"
-	bool VisitParenExpr(ParenExpr *PE) {
-		Expr * expr = PE->getSubExpr();
-		llvm::outs() << currentId << ", hasSubExpr, " << genId(expr) << "\n";
-		return true;
-	}
+	// bool VisitParenExpr(ParenExpr *PE) {
+	// 	Expr * expr = PE->getSubExpr();
+	// 	llvm::outs() << currentId << ", hasSubExpr, " << genId(expr) << "\n";
+	// 	return true;
+	// }
 
 	// https://en.wikipedia.org/wiki/Comma_operator ?
 	bool VisitParenListExpr(ParenListExpr *PLE) {
@@ -363,7 +370,6 @@ public:
 	// StmtExpr - This is the GNU Statement Expression extension: ({int X=4; X;}).
 	// The StmtExpr contains a single CompoundStmt node, which it evaluates and takes the value of the last subexpression.
 	// A StmtExpr is always an r-value; values "returned" out of a StmtExpr will be copied.
-	// StmtExpr
 
 	// VisitStringLiteral(StringLiteral *SL) {
 		// SL->getBytes() -> StringRef
@@ -373,12 +379,9 @@ public:
 	// (except sizeof and alignof), the postinc/postdec operators 
 	// from postfix-expression, and various extensions.
 	bool VisitUnaryOperator(UnaryOperator *UOP) {
-		// isPrefix()
-		// isPostfix()
-		// isIncrementOp()
-		// isDecrementOp()
+		// isPrefix(),isPostfix(),isIncrementOp(),isDecrementOp()
 		llvm::outs() << currentId << ", hasOperator, " << UnaryOperator::getOpcodeStr(UOP->getOpcode()) << "\n";
-		Expr *sub = UOP->getSubExpr();
+		Expr *sub = UOP->getSubExpr()->IgnoreParenCasts();
 		llvm::outs() << currentId << ", hasSubExpr, " << genId(sub) << "\n";
 
 		return true;
@@ -389,8 +392,10 @@ public:
 	// VisitTypeLoc(TypeLoc TL)
 private:
 	ASTContext *Context;
+	std::string currentId;
+	FunctionDecl *currentFunction;
 
-	// generate a id based on the location <start:end>
+	// generate an id based on the location <start:end>
 	template<typename NodeType>
 	std::string getLoc(NodeType *s) {
 		std::ostringstream idss;
@@ -442,3 +447,10 @@ private:
 		}
 	}
 };
+
+
+// @todo 
+// [] add scope info: when traversing, use a global var
+// for current scope (function, block, compound stmt, etc)
+// build the "inScope" relation
+// [] add stmt order info? (next)
