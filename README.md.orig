@@ -20,7 +20,6 @@ A recommended method under Debian/Ubuntu is to use the apt repository
 
 http://llvm.org/apt/
 
-
 ## Usage
 
 1. Extract information from AST and build the knowledge base using the
@@ -36,6 +35,18 @@ Clang tooling frontend:
 
 	1. main.pl is the main entry to the program
 	
+<<<<<<< HEAD
+		swipl main.pl out.trp
+		
+	2. The pointer analysis is run automatically and when it is finished, the terminal is in interactive mode, you can query the results with
+
+		varPointsTo(X, Y).
+
+	or use the helper predicate `getVarId` to get the Id of a variable and query with `varPointsTo(VarId1, VarId2).`.
+
+
+## Implementation
+=======
     	```    
     	swipl main.pl out.trp
     	```	
@@ -45,19 +56,14 @@ Clang tooling frontend:
 	
 ## Note on the implementation
 
-		varPointsTo(X, Y).
-
-	or use the helper predicate `getVarId` to get the Id of a variable and query with `varPointsTo(VarId1, VarId2).`.
-
-
-## Implementation
+...
+>>>>>>> 7f6dbb812339c761df6dd1386ffc9dd89e766461
 
 see document/
 
 ## Reference
 
 1. Andersen, L.O., 1994. Program analysis and specialization for the C programming language (Doctoral dissertation, University of Cophenhagen).
-
 
 
 

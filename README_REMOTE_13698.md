@@ -1,7 +1,5 @@
 # Pointer-Analysis
 
-[TOC]
-
 A basic Andersen pointer analysis based on Clang and Prolog
 
 + context sensitive(?)
@@ -19,7 +17,6 @@ The C parser is built on top of Clang-3.7, so install the Clang-3.7
 A recommended method under Debian/Ubuntu is to use the apt repository
 
 http://llvm.org/apt/
-
 
 ## Usage
 
@@ -45,19 +42,12 @@ Clang tooling frontend:
 	
 ## Note on the implementation
 
-		varPointsTo(X, Y).
+...
 
-	or use the helper predicate `getVarId` to get the Id of a variable and query with `varPointsTo(VarId1, VarId2).`.
-
-
-## Implementation
-
-see document/
 
 ## Reference
 
 1. Andersen, L.O., 1994. Program analysis and specialization for the C programming language (Doctoral dissertation, University of Cophenhagen).
-
 
 
 
