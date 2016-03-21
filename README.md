@@ -34,19 +34,18 @@ Clang tooling frontend:
 
 2. (Iteractively) Run the pointer analysis inference program
 
-	1. main.pl is the main entry to the program
+	1. `main.pl` is the main entry to the program
 	
     	```    
     	swipl main.pl out.trp
     	```	
 	
 	2. query the point-to relation
-	3. 
-	
-## Note on the implementation
-
+	The pointer analysis is run automatically and when it is finished, the terminal is in interactive mode, you can query the results with
+		```
 		varPointsTo(X, Y).
-
+		```
+		
 	or use the helper predicate `getVarId` to get the Id of a variable and query with `varPointsTo(VarId1, VarId2).`.
 
 
