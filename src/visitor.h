@@ -70,36 +70,37 @@ public:
 		return true;
 	}
 	// -->
-    bool VisitValueDecl(ValueDecl *vd) {
-    	QualType qt = vd->getType();
+    bool VisitValueDecl(ValueDecl *VD) {
+    	QualType qt = VD->getType();
     	const Type *ty = qt.getTypePtrOrNull();
-    	// llvm::outs() << "<debug> \n";
     	// qt.dump();
-    	// llvm::outs() << "</debug> \n";
     	llvm::outs() << currentId << ", hasTypeClass, ";
     	dumpNestPointerType(ty, false);
     	llvm::outs() << "\n";
 
-    	if (ty->isArrayType()) {
-    		const ArrayType *at = ty->getAsArrayTypeUnsafe();
-    		QualType eleqt = at->getElementType();
-    		llvm::outs() << currentId << ", hasElementTypeClass, ";
-    		dumpNestPointerType(eleqt.getTypePtrOrNull(), false);
-    		llvm::outs() << "\n";
-    	}
-		
     	llvm::outs() << currentId << ", hasType, " << qt.getAsString() << "\n";
 
+    	if (ty->isArrayType()) {
+    		const ArrayType *at = ty->getAsArrayTypeUnsafe();
+    		QualType eqt = at->getElementType();
+    		llvm::outs() << currentId << ", hasElementTypeClass, ";
+    		dumpNestPointerType(eqt.getTypePtrOrNull(), false);
+    		llvm::outs() << "\n";
+    		llvm::outs() << currentId << ", hasElementType, " << eqt.getAsString() << "\n";
+    	}
+		
     	return true;
     }
     // ---> DeclaratorDecl
     // ---->
-    bool VisitFieldDecl(FieldDecl *fd) {
-    	// getParent - Returns the parent of this field declaration, which is the struct in which this method is defined.
-    	RecordDecl *rd = fd->getParent();
-    	llvm::outs() << currentId << ", hasParent, " << genId(rd) << "\n";
-    	// getFieldIndex -> unsigned
-    	// getCanonicalDecl -> FieldDecl *
+    bool VisitFieldDecl(FieldDecl *FD) {
+    	// getParent - Returns the parent of this field declaration, 
+    	// which is the struct in which this method is defined.
+    	//RecordDecl *rd = FD->getParent();
+    	//llvm::outs() << currentId << ", hasParent, " << genId(rd) << "\n";
+    	int index = FD->getFieldIndex();
+    	llvm::outs() << currentId << ", hasIndex, " << index << "\n";
+    	//FieldDecl *CD = FD->getCanonicalDecl();
     	return true;
     }
     // ---->
@@ -251,6 +252,11 @@ public:
 		// Decl *decl = CE->getCalleeDecl(); // decl of foo
 		// llvm::outs() << currentId << ", calls, " << genId(decl) << "\n";
 		
+		// call graph build
+		if (currentFunction) {
+			llvm::outs() << currentId << ", inProc, " << genId(currentFunction) << "\n";
+		}
+		
 		FunctionDecl *fdecl = CE->getDirectCallee(); // return dyn_cast_or_null<FunctionDecl>(getCalleeDecl());
 		if (fdecl) {
 			llvm::outs() << currentId << ", callsFunc, " << genId(fdecl) << "\n";
@@ -265,7 +271,7 @@ public:
 		for (CallExpr::arg_iterator ai = CE->arg_begin(), 
 			ae = CE->arg_end(); ai != ae; ++ai) {
 			Expr *arg = *ai;
-			llvm::outs() << currentId << ", hasArg(" << i << "), " << genId(arg) << "\n";
+			llvm::outs() << currentId << ", hasArg(" << i << "), " << genId(arg->IgnoreParenCasts()) << "\n";
 			i++;
 		}
 

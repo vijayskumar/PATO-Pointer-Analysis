@@ -1,4 +1,4 @@
-# Clang tool based on LibTooling
+# Some random note on building compiler tools based on Clang LibTooling
 
 Standalone tool
 

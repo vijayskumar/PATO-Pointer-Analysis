@@ -3,7 +3,7 @@
 #######################
 # CXX = clang++-3.7
 CXX = g++
-CXXFLAGS = -fno-rtti -O0 -g -std=c++11 
+CXXFLAGS = -fno-rtti -O0 -g -std=c++11 #-DANDERSEN
 
 LLVM_BIN_PATH = 
 LLVM_CONFIG := llvm-config-3.7

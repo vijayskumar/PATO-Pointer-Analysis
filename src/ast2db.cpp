@@ -34,7 +34,13 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Casting.h"
 		
+//#if defined(ANDERSEN)
+//#include "visitor_andersen.h"
+//#elif defined(CFG)
+//#include "visitor_cfg.h"
+//#else
 #include "visitor.h"
+//#endif
 
 
 // interface to write generic actions on an AST

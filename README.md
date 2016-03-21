@@ -1,5 +1,7 @@
 # Pointer-Analysis
 
+[TOC]
+
 A basic Andersen pointer analysis based on Clang and Prolog
 
 + context sensitive (?)
@@ -37,8 +39,16 @@ Clang tooling frontend:
 	
 		swipl main.pl out.trp
 		
-	2. 
+	2. The pointer analysis is run automatically and when it is finished, the terminal is in interactive mode, you can query the results with
 
+		varPointsTo(X, Y).
+
+	or use the helper predicate `getVarId` to get the Id of a variable and query with `varPointsTo(VarId1, VarId2).`.
+
+
+## Implementation
+
+see document/
 
 ## Reference
 

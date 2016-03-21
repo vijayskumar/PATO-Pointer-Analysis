@@ -21,8 +21,7 @@ int plus(int a, int b) {
 }
 
 int plus2(int *a, int *b) {
-	int c = (*a + *b);
-	return c;
+	return (*a + *b);
 }
 
 int main() {
@@ -40,11 +39,11 @@ int main() {
 
 	for (int i = 0; i < 5; ++i)
 	{
-		pl[i] = i; //
+		pl[i] = i;
 	}
 	
 	c = 24;
-	st.a = c; //
+	st.a = c; 
 
 	cp = &c; // addr [x]
 	*cp += 3;

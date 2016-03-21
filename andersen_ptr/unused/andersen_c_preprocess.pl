@@ -12,10 +12,10 @@
 
 %% : multifile ...
 
-%% 
+%% --------------------------------
 %% Basic input relations encoded
 %% for the pointer analysis
-%% 
+%% ----------------------------------
 %% Note the frontend already strip the cast and paren expr 
 
 %% malloc
@@ -75,9 +75,6 @@ load_r(ToVar, BaseVar, Fld) :-
 	rdf(ToRef, hasDecl, ToVar),
 	dbw(BaseExpr, ToRef).
 
-%% x = base[]
-%% arrayLoad(To, Base)
-
 %% store
 %% *p = q
 store_r(DerefVar, FromVar) :-
@@ -102,7 +99,25 @@ store_r(BaseVar, Fld, FromVar) :-
 	dbw(FromRef, BaseExpr).
 
 %% base[] = x
-%% arrayStore_r(Base, From).
+%% @tbd init 
+arrayStore_r(Base, From) :-
+	rdf(Sub, isa, literal('ArraySubscriptExpr')),
+	assignLOR(Sub, FromRef),
+	rdf(Sub, hasBase, BaseRef),
+	rdf(BaseRef, hasDecl, Base),
+	rdf(FromRef, hasDecl, From),
+	dbw(FromRef, BaseRef).
+
+
+%% x = base[]
+arrayLoad_r(To, Base) :-
+	rdf(Sub, isa, literal('ArraySubscriptExpr')),
+	assignROL(ToRef, Sub),
+	rdf(Sub, hasBase, BaseRef),
+	rdf(BaseRef, hasDecl, Base),
+	rdf(ToRef, hasDecl, To),
+	dbw(BaseRef, ToRef).
+
 
 %% call 
 callProc_r(Invoc, Proc) :-
@@ -110,16 +125,16 @@ callProc_r(Invoc, Proc) :-
 
 %% +Nth
 formalArg_r(Proc, Nth, ParmVar) :-
-	atomic_list_concat(['hasParm(', Nth, ')'], HasParm),
-	rdf(Proc, HasParm, ParmVar).
+	rdf(Proc, HasParm, ParmVar),
+	atomic_list_concat(['hasParm(', Nth, ')'], HasParm).
 
 formalReturn_r(Proc, RetVar) :-
 	rdf(Ret, inProc, Proc),
 	rdf(Ret, returns, RetVar).
 
 actualArg_r(Invoc, Nth, ArgVar) :-
-	atomic_list_concat(['hasArg(', Nth, ')'], HasArg),
 	rdf(Invoc, HasArg, ArgExpr),
+	atomic_list_concat(['hasArg(', Nth, ')'], HasArg),
 	stripCast(ArgExpr, ArgExpr2),
 	stripParen(ArgExpr2, ArgVar). %? pass struct ...
 
@@ -128,9 +143,9 @@ actualReturn_r(Invoc, Var) :-
 	assignROL(VarExpr, Invoc), % stripParen from Invoc?
 	rdf(VarExpr, hasDecl, Var).
 
-%% 
+%% ------------------------
 %% Syntax preprocess helper
-%% 
+%% ------------------------
 
 %% +Var
 isPointerType(Var) :-
@@ -171,16 +186,17 @@ assignLOR(To, From) :-
 	rdf(Bop, hasOperator, literal('=')),
 	rdf(Bop, hasRHS, From).
 
+%% decomp a s.p or s->p expression
 baseField(Mop, BaseExpr, FldDecl) :-
 	rdf(Mop, isa, literal('MemberExpr')),
 	rdf(Mop, hasBase, BaseExpr),
 	rdf(Mop, hasMemberDecl, FldDecl).
 
-%% 
+%% -----------------------------------------
 %% Driver predicates to generate relations 
-%% 
+%% -----------------------------------------
 
-%% scan all the assignment, 
+%% scan all the assignment (initialization, assignment)
 gen_all :-
 	nl.
 

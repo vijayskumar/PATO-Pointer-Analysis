@@ -1,3 +1,7 @@
+/*
+* This file is used as a startup template or
+* test playground for clang tooling APIs 
+*/
 #include "clang/Frontend/FrontendActions.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/AST/ASTConsumer.h"
