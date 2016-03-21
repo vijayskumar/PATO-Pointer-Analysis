@@ -1,4 +1,4 @@
 .PHONY : test
 
 test : 
-	swipl --nosignals --quiet main.pl type.c.trp
+	swipl --nosignals --quiet main.pl test.c.trp

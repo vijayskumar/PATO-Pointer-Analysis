@@ -4,8 +4,10 @@
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdf_ntriples)).
 
-%% :- use_module('andersen.pl').
-:- ['RelationGenClang.pl'].
+:- set_prolog_flag(verbose, silent).
+
+:- include('relation_gen_clang.pl').
+:- include('andersen.pl').
 
 :- initialization main.
 
@@ -13,7 +15,8 @@
 eval :-
 	current_prolog_flag(argv, Arguments),
 	[Inputfile|_] = Arguments,
-	rdf_load(Inputfile, [format(ntriples)]).
+	rdf_load(Inputfile, [format(ntriples)]),
+	build(all).
 
 main :- 
 	catch(eval, E, (print_message(error, E), fail)),

@@ -41,7 +41,7 @@ public:
 	// ---> TagDecl
 	// ----> 
     bool VisitRecordDecl(RecordDecl *RD) {
-    	QualType qt = Context->getRecordType(RD);
+    	QualType QT = Context->getRecordType(RD);
     	RecordDecl *RDF = RD->getDefinition();
     	llvm::outs() << currentId << ", hasDefinition, " << genId(RDF) << "\n";
     	for (auto *I : RD->fields()) {
@@ -53,40 +53,49 @@ public:
     // ---->
     // Represents the declaration of a typedef-name via the 'typedef' type specifier
     bool VisitTypedefDecl(TypedefDecl *TD) {
-		QualType qt = TD->getUnderlyingType();
-		const Type *ty = qt.getTypePtrOrNull();
-		if (ty) 
-			// llvm::outs() << currentId << ", hasUnderlyingTypeClass, " << ty->getTypeClassName() << "\n";
-			llvm::outs() << currentId << ", hasUnderlyingType, " << qt.getAsString() << "\n";
-		if (!qt.isCanonical()) {
-			QualType cqt = qt.getCanonicalType();
-			// FIXME
-			// llvm::outs() << currentId << ", hasCanonicalTypeClass, " << cqt.getTypePtr()->getTypeClassName() << "\n";
-			llvm::outs() << currentId << ", hasCanonicalType, " << cqt.getAsString() << "\n";
+		QualType QT = TD->getUnderlyingType();
+		const Type *Ty = QT.getTypePtrOrNull();
+		if (Ty) {
+			// llvm::outs() << currentId << ", hasUnderlyingTypeClass, " << Ty->getTypeClassName() << "\n";
+			llvm::outs() << currentId << ", hasUnderlyingType, " << QT.getAsString() << "\n";
 		}
-		TypedefNameDecl *tdnd = TD->getCanonicalDecl();
-		if (tdnd)
-			llvm::outs() << currentId << ", hasCanonicalDecl, " << genId(tdnd) << "\n";
+		if (!QT.isCanonical()) {
+			QualType CQT = QT.getCanonicalType();
+			// FIXME
+			// llvm::outs() << currentId << ", hasCanonicalTypeClass, " << CQT.getTypePtr()->getTypeClassName() << "\n";
+			llvm::outs() << currentId << ", hasCanonicalType, " << CQT.getAsString() << "\n";
+		}
+		TypedefNameDecl *CDecl = TD->getCanonicalDecl();
+		if (CDecl)
+			llvm::outs() << currentId << ", hasCanonicalDecl, " << genId(CDecl) << "\n";
 		return true;
 	}
 	// -->
-    bool VisitValueDecl(ValueDecl *VD) {
-    	QualType qt = VD->getType();
-    	const Type *ty = qt.getTypePtrOrNull();
-    	// qt.dump();
+    bool VisitValueDecl(ValueDecl *ValD) {
+    	QualType QT = ValD->getType();
+    	const Type *Ty = QT.getTypePtrOrNull();
+
+    	// QT.dump();
     	llvm::outs() << currentId << ", hasTypeClass, ";
-    	dumpNestPointerType(ty, false);
+    	dumpNestPointerType(Ty, false);
     	llvm::outs() << "\n";
 
-    	llvm::outs() << currentId << ", hasType, " << qt.getAsString() << "\n";
+    	if (Ty->isAggregateType()) {
+    		llvm::outs() << currentId << ", hasTypeClass, AggregateType\n"; 
+    	}
 
-    	if (ty->isArrayType()) {
-    		const ArrayType *at = ty->getAsArrayTypeUnsafe();
-    		QualType eqt = at->getElementType();
+    	// QualType CQT = QT.getCanonicalType();
+    	// llvm::outs() << currentId << ", hasCanonicalType, " << CQT.getTypePtr()->getTypeClassName() << "\n";
+
+    	llvm::outs() << currentId << ", hasType, " << QT.getAsString() << "\n";
+
+    	if (Ty->isArrayType()) {
+    		const ArrayType *ArrTy = Ty->getAsArrayTypeUnsafe();
+    		QualType EleQT = ArrTy->getElementType();
     		llvm::outs() << currentId << ", hasElementTypeClass, ";
-    		dumpNestPointerType(eqt.getTypePtrOrNull(), false);
+    		dumpNestPointerType(EleQT.getTypePtrOrNull(), false);
     		llvm::outs() << "\n";
-    		llvm::outs() << currentId << ", hasElementType, " << eqt.getAsString() << "\n";
+    		llvm::outs() << currentId << ", hasElementType, " << EleQT.getAsString() << "\n";
     	}
 		
     	return true;
@@ -124,8 +133,8 @@ public:
 			llvm::outs() << currentId << ", hasParm(" << i << "), " << genId(p) << "\n";
 		}
 
-		QualType qt = FD->getReturnType();
-		// llvm::outs() << currentId << ", hasReturnType, " << qt.getAsString() << "\n";
+		QualType QT = FD->getReturnType();
+		// llvm::outs() << currentId << ", hasReturnType, " << QT.getAsString() << "\n";
 		// FunctionDecl *CFD = FD->getCanonicalDecl();
 		return true; 
 	}
@@ -136,9 +145,9 @@ public:
 			llvm::outs() << currentId << ", isa, " << "LocalVarDecl\n";
 		}
 
-		VarDecl *CV = VDecl->getCanonicalDecl();
-		if (CV) {
-			llvm::outs() << currentId << ", hasCanonicalDecl, " << genId(CV) << "\n";
+		VarDecl *CVDecl = VDecl->getCanonicalDecl();
+		if (CVDecl) {
+			llvm::outs() << currentId << ", hasCanonicalDecl, " << genId(CVDecl) << "\n";
 		}
 		// hasLocalStorage()
 		// isThisDeclarationADefinition()
@@ -146,7 +155,7 @@ public:
 		if (VDef) {
 			llvm::outs() << currentId << ", hasDefinition, " << genId(VDef) << "\n";
 		}
-		// isFileVarDecl() -> bool // file scoped variable declaration
+		// isFileVarDecl() // file scoped variable declaration
 		Expr *Init = VDecl->getInit();
 		if (Init) {
 			llvm::outs() << currentId << ", hasInit, " << genId(Init->IgnoreParenCasts()) << "\n";

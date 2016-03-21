@@ -100,7 +100,7 @@ $(BIN)$(FRE) : $(SRC)$(FRE).cpp $(SRC)visitor.h
 # 	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) -c $< -o $@
 .PHONY : test
 test : $(BIN)$(FRE)
-	@$(BIN)$(FRE) $(TEST)type.c -- -Wall -I/usr/lib/llvm-3.7/lib/clang/3.7.1/include
+	@$(BIN)$(FRE) $(TEST)test.c -- -Wall -I/usr/lib/llvm-3.7/lib/clang/3.7.1/include
 	
 .PHONY : clean
 clean :

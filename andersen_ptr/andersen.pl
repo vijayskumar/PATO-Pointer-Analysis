@@ -3,13 +3,15 @@
 %% (points-to set) that a program var may point to
 %%
 %% This module defines the general inference rule independent of
-%% language and compiler, the detailed module should implement
-%% the following input relations
+%% language and compiler, the preprocess module should generate
+%% the input relations
 
-:- module(andersen, [varPointsTo/2,
-	fldPointsTo/3,
-	interProcAssign/2
-	]).
+%% :- module(andersen, 
+%% 	[varPointsTo/2,
+%% 	fieldPointsTo/3,
+%% 	interProcAssign/2,
+%% 	arrayContentsPointsTo/2
+%% 	]).
 
 :- dynamic alloc/2, address/2, copy/2, 
 	load/2, fieldLoad/3, arrayLoad/2, 
@@ -93,7 +95,6 @@ varPointsTo(To, Obj) :-
 arrayContentsPointsTo(Base, Obj) :-
 	arrayStore(BaseP, From),
 	varPointsTo(BaseP, Base),
-	%% arrayStore(BaseP, From),
 	varPointsTo(From, Obj).
 
 %% To = base[...]
