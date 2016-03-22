@@ -6,8 +6,8 @@
 
 :- set_prolog_flag(verbose, silent).
 
-:- include('relation_gen_clang.pl').
-:- include('andersen.pl').
+:- ['preprocessing.pl'].
+:- ['andersen.pl'].
 
 :- initialization main.
 
@@ -16,7 +16,8 @@ eval :-
 	current_prolog_flag(argv, Arguments),
 	[Inputfile|_] = Arguments,
 	rdf_load(Inputfile, [format(ntriples)]),
-	build(all).
+	%% build(all),
+    nl.
 
 main :- 
 	catch(eval, E, (print_message(error, E), fail)),

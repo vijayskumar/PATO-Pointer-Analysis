@@ -3,12 +3,13 @@
 
 :- use_module(library(semweb/rdf_db)).
 
-:- dynamic alloc/2, address/2, copy/2, 
+:- dynamic heapLoc/2, stackLoc/2, copy/2, 
 	load/2, fieldLoad/3, arrayLoad/2, 
 	store/2, fieldStore/3, arrayStore/2,
 	callProc/2, formalArg/3, actualArg/3,
 	formalReturn/2, actualReturn/2.
 
+:- dynamic globalState/1.
 %% ------------------------------
 %% relation build helper
 %% ------------------------------
@@ -20,11 +21,24 @@ insertFact(List) :-
 	%% write(Fact), nl,
 	assertz(Fact).
 
-%% The all in one step predicate that build all the 
+%% The all in one step to produce all the 
 %% relations
 build(all) :-
-	forall(relationGen(X), (write(X), nl)),
-	write('relations built successfully'), nl.
+	forall(relationGen(_), put('.')), nl,
+	write('Successfully produce the relations'), 
+	assertz(globalState(build)).
+
+%% Output the generated relations to file 
+build(out) :-
+	(globalState(build), !; write('run build(all). first'), nl, fail),
+	telling(Old), tell('out.pl'),
+	forall(member(P, [heapLoc, stackLoc, copy, 
+		load, fieldLoad, arrayLoad,
+		store, fieldStore, arrayStore, 
+		callProc, formalArg, actualArg,
+		formalReturn, actualReturn]), listing(P)),
+	write('%%'), nl,
+	told, tell(Old).
 
 %% ------------------------------
 %% Some syntax helper
@@ -38,14 +52,14 @@ alloc(Expr, Heap) :-
 		rdf(Expr, calls, literal('calloc'))
 	), atom_concat(heap, Expr, Heap). %% Heap is abstracted(named) as callsite
 
-%% [x]
+%% 
 assign(LHS, RHS) :-
 	rdf(Bop, hasOperator, literal('=')),
 	rdf(Bop, hasLHS, LHS),
 	rdf(Bop, hasRHS, RHS).
 
 %% +Proc
-formalArg(Proc) :-
+procFormalArg(Proc) :-
 	rdf(Proc, HasParm, ParmVar),
 	rdf(ParmVar, isa, literal('ParmVar')),
 	atom_concat('hasParm(', X, HasParm),
@@ -53,7 +67,7 @@ formalArg(Proc) :-
 	insertFact(['formalArg', Proc, Nth, ParmVar]).
 
 %% +Proc
-formalReturn(Proc) :-
+procFormalReturn(Proc) :-
 	rdf(Return, isa, literal('ReturnStmt')),
 	rdf(Return, inProc, Proc),
 	rdf(Return, returns, RetExpr),
@@ -101,13 +115,13 @@ relationGen(initialization) :-
 %% treat array declaration as malloc 
 relationGen(aggregateDecl) :-
 	rdf(Decl, hasTypeClass, literal('AggregateType')),
-	insertFact([alloc, Decl, heap(Decl)]).
+	insertFact([heapLoc, Decl, heap(Decl)]).
 
 %% $
 %% function declaration 
 relationGen(functionDecl) :-
 	rdf(Proc, isa, literal('Function')),
-	(formalArg(Proc); formalReturn(Proc)).
+	(procFormalArg(Proc); procFormalReturn(Proc)).
 
 %% $
 relationGen(functionCall) :-
@@ -165,7 +179,7 @@ parseLHS(LHS, ToRef, Relation) :-
 parseRHS(RHS, RHSINode) :-
 	alloc(RHS, Heap),
 	atom_concat(var, RHS, RHSINode),
-	insertFact([alloc, RHSINode, Heap]), !.
+	insertFact([heapLoc, RHSINode, Heap]), !.
 
 %% = &X
 parseRHS(RHS, RHSINode) :-
@@ -173,7 +187,7 @@ parseRHS(RHS, RHSINode) :-
 	rdf(RHS, hasSubExpr, LocRef),
 	rdf(LocRef, hasDecl, Var),
 	atom_concat(var, RHS, RHSINode),
-	insertFact([address, RHSINode, Var]), !.
+	insertFact([stackLoc, RHSINode, Var]), !.
 
 %% = ref 
 parseRHS(RHS, RHSINode) :-
@@ -224,6 +238,7 @@ parseRHS(RHS, RHSINode) :-
 %% checkType(LHS, Type) :- nl.
 
 %% A more complicated alternative
+%% recursively parse the RHS by introducing more temporary variables
 %% RHS ::= refExpr | &(refExpr) | *refExpr | refExpr.f | refExpr[]
 %% refExpr ::= 'DeclRefExpr' | alloc | callExpr | RHS
 recursiveParseRHS(RHS, INode) :-
@@ -235,7 +250,7 @@ recursiveParseRHS(RHS, INode) :-
 recursiveParseRHS(RHS, INode) :-
 	alloc(RHS, Heap),
 	atom_concat(var, RHS, INode),
-	insertFact([alloc, INode, Heap]), !.
+	insertFact([heapLoc, INode, Heap]), !.
 
 %% call 
 recursiveParseRHS(RHS, INode) :-
@@ -243,14 +258,14 @@ recursiveParseRHS(RHS, INode) :-
 	atom_concat(var, RHS, INode),
 	insertFact(['actualReturn', RHS, INode]), !.
 
-%% = &Expr => = INode; address(INode, INode2);
+%% = &Expr => = INode; stackLoc(INode, INode2);
 %% (INode2 = Expr)
 recursiveParseRHS(RHS, INode) :-
 	rdf(RHS, hasOperator, literal('&')),
 	rdf(RHS, hasSubExpr, Sub),
 	atom_concat(var, RHS, INode), 
 	recursiveParseRHS(Sub, INode2),
-	insertFact([address, INode, INode2]).
+	insertFact([stackLoc, INode, INode2]).
 
 %% = *Expr => (INode2 = Expr); load(INode, INode2)
 recursiveParseRHS(RHS, INode) :-

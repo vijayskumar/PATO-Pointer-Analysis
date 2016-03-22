@@ -6,14 +6,9 @@
 %% language and compiler, the preprocess module should generate
 %% the input relations
 
-%% :- module(andersen, 
-%% 	[varPointsTo/2,
-%% 	fieldPointsTo/3,
-%% 	interProcAssign/2,
-%% 	arrayContentsPointsTo/2
-%% 	]).
+%% :- module(andersen, [varPointsTo/2]).
 
-:- dynamic alloc/2, address/2, copy/2, 
+:- dynamic heapLoc/2, stackLoc/2, copy/2, 
 	load/2, fieldLoad/3, arrayLoad/2, 
 	store/2, fieldStore/3, arrayStore/2,
 	callProc/2, formalArg/3, actualArg/3,
@@ -29,10 +24,10 @@
 %% basic
 %% --------------------
 varPointsTo(Var, Loc) :-
-	alloc(Var, Loc).
+	heapLoc(Var, Loc).
 
 varPointsTo(Var, Loc) :-
-	address(Var, Loc).
+	stackLoc(Var, Loc).
 
 %% copy |- \include 
 %% p \include q |-
