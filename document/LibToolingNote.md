@@ -152,12 +152,6 @@ and (http://clang.llvm.org/docs/FAQ.html)
 	
 	
 	
-	
-	
-	
-	
-	
-	
 ## Some links
 
 
