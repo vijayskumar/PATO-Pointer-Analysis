@@ -1,44 +1,42 @@
 %% module must be the first directive, and must appear just once.
-%% :- module(relation_gen_clang, [build/1, relationGen/1]).
+%% :- module(preprocessing, [build/1, relationGen/1]).
 
 :- use_module(library(semweb/rdf_db)).
 
-:- dynamic heapLoc/2, stackLoc/2, copy/2, 
-	load/2, fieldLoad/3, arrayLoad/2, 
+:- dynamic heapLoc/2, stackLoc/2, copy/2,
+	load/2, fieldLoad/3, arrayLoad/2,
 	store/2, fieldStore/3, arrayStore/2,
 	callProc/2, formalArg/3, actualArg/3,
 	formalReturn/2, actualReturn/2.
 
-:- dynamic globalState/1.
+%% # APIs
+%% Produce all the relations and optionally
+%% output the generated relations to file
+% Out: file name .pl
+build(Out) :-
+	forall(relationGen(_), put('.')), nl,
+	write('Successfully produce the relations'),
+	(atom(Out) ->
+	telling(Old), tell(Out),
+	forall(member(P, [heapLoc, stackLoc, copy,
+		load, fieldLoad, arrayLoad,
+		store, fieldStore, arrayStore,
+		callProc, formalArg, actualArg,
+		formalReturn, actualReturn]), listing(P)),
+	write('%%'), nl,
+	told, tell(Old)
+	).
+	
 %% ------------------------------
 %% relation build helper
 %% ------------------------------
 
 %% List is a list of [Relation, Arg1, Arg2, ...]
 %% e.g., [copy, toVar, FromVar]
-insertFact(List) :- 
-	Fact =.. List, 
+insertFact(List) :-
+	Fact =.. List,
 	%% write(Fact), nl,
 	assertz(Fact).
-
-%% The all in one step to produce all the 
-%% relations
-build(all) :-
-	forall(relationGen(_), put('.')), nl,
-	write('Successfully produce the relations'), 
-	assertz(globalState(build)).
-
-%% Output the generated relations to file 
-build(out) :-
-	(globalState(build), !; write('run build(all). first'), nl, fail),
-	telling(Old), tell('out.pl'),
-	forall(member(P, [heapLoc, stackLoc, copy, 
-		load, fieldLoad, arrayLoad,
-		store, fieldStore, arrayStore, 
-		callProc, formalArg, actualArg,
-		formalReturn, actualReturn]), listing(P)),
-	write('%%'), nl,
-	told, tell(Old).
 
 %% ------------------------------
 %% Some syntax helper
@@ -52,7 +50,7 @@ alloc(Expr, Heap) :-
 		rdf(Expr, calls, literal('calloc'))
 	), atom_concat(heap, Expr, Heap). %% Heap is abstracted(named) as callsite
 
-%% 
+%%
 assign(LHS, RHS) :-
 	rdf(Bop, hasOperator, literal('=')),
 	rdf(Bop, hasLHS, LHS),
@@ -72,7 +70,7 @@ procFormalReturn(Proc) :-
 	rdf(Return, inProc, Proc),
 	rdf(Return, returns, RetExpr),
 	parseRHS(RetExpr, RHSINode),
-	insertFact(['formalReturn', Proc, RHSINode]). 
+	insertFact(['formalReturn', Proc, RHSINode]).
 
 %% +Invoc
 callGraph(Invoc) :-
@@ -81,11 +79,11 @@ callGraph(Invoc) :-
 	rdf(Invoc, HasArg, ArgExpr),
 	atom_concat('hasArg(', X, HasArg),
 	atom_concat(Nth, ')', X),
-	%% parse ArgExpr 
-	%% func(ArgExpr) => 
+	%% parse ArgExpr
+	%% func(ArgExpr) =>
 	%% (INode = ArgExpr), func(INode)
 	parseRHS(ArgExpr, RHSINode),
-	insertFact(['actualArg', Invoc, Nth, RHSINode]). 
+	insertFact(['actualArg', Invoc, Nth, RHSINode]).
 
 %% ------------------------------
 %% Main predicates to generate relations
@@ -96,14 +94,15 @@ callGraph(Invoc) :-
 relationGen(assignment) :-
 	assign(LHS, RHS), %% scan assignments
 	%% write(LHS), write('---'), nl, %% only for debug
-	parseLHS(LHS, ToRef, Relation), 
-	parseRHS(RHS, RHSINode),
+	parseLHS(LHS, ToRef, Relation), %% return ToRef and Relation
+	parseRHS(RHS, RHSINode), %% return temp node
+	%% Relation(ToRef, RHSINode)
 	append([Relation|ToRef], [RHSINode], Constrain),
 	insertFact(Constrain).
 
 %% $
 %% initialization
-%% @tbd parse init list 
+%% @tbd more complex parse init list
 relationGen(initialization) :-
 	rdf(Decl, hasInit, Initializer),
 	parseRHS(Initializer, RHSINode),
@@ -112,13 +111,13 @@ relationGen(initialization) :-
 %% $
 %% An aggregate type is an array or a class type (struct, union, or class)
 %% treat struct as object, so its declaration as malloc
-%% treat array declaration as malloc 
+%% treat array declaration as malloc
 relationGen(aggregateDecl) :-
 	rdf(Decl, hasTypeClass, literal('AggregateType')),
 	insertFact([heapLoc, Decl, heap(Decl)]).
 
 %% $
-%% function declaration 
+%% function declaration
 relationGen(functionDecl) :-
 	rdf(Proc, isa, literal('Function')),
 	(procFormalArg(Proc); procFormalReturn(Proc)).
@@ -129,9 +128,9 @@ relationGen(functionCall) :-
 	callGraph(Invoc).
 
 %% ------------------------------
-%% ParseLHS 
+%% ParseLHS
 %% ------------------------------
-assignKind(reference, copy). 
+assignKind(reference, copy).
 assignKind(dereference, store).
 assignKind(member, fieldStore).
 assignKind(subscript, arrayStore).
@@ -152,11 +151,11 @@ relationKind(LHS, Relation) :-
 	assignKind(subscript, Relation).
 
 %% +LHS, -ToRef, -Relation
-%% @tbd add type check 
+%% @tbd add type check
 parseLHS(LHS, ToRef, Relation) :-
-	relationKind(LHS, Relation), 
+	relationKind(LHS, Relation),
 	(
-		Relation == copy 
+		Relation == copy
 		-> rdf(LHS, hasDecl, Decl),	ToRef = [Decl]
 		; Relation == store
 		-> rdf(LHS, hasSubExpr, DerefVarRef), rdf(DerefVarRef, hasDecl, DerefVar), ToRef = [DerefVar]
@@ -167,18 +166,18 @@ parseLHS(LHS, ToRef, Relation) :-
 	).
 
 %% ------------------------------
-%% ParseRHS 
+%% ParseRHS
 %% ------------------------------
 %% ``LHS = RHS'' is first split to
 %% LHS = tmp; tmp = RHS
-%% tmp is regarded as normal reference (keep transition) 
+%% tmp is regarded as normal reference (keep transition)
 %% e.g., *p = *q or s.f = t.q ...
 
 %% +RHS -RHSINode
 %% = alloc()
 parseRHS(RHS, RHSINode) :-
 	alloc(RHS, Heap),
-	atom_concat(var, RHS, RHSINode),
+	atom_concat(tmp, RHS, RHSINode),
 	insertFact([heapLoc, RHSINode, Heap]), !.
 
 %% = &X
@@ -186,20 +185,20 @@ parseRHS(RHS, RHSINode) :-
 	rdf(RHS, hasOperator, literal('&')),
 	rdf(RHS, hasSubExpr, LocRef),
 	rdf(LocRef, hasDecl, Var),
-	atom_concat(var, RHS, RHSINode),
+	atom_concat(tmp, RHS, RHSINode),
 	insertFact([stackLoc, RHSINode, Var]), !.
 
-%% = ref 
+%% = ref
 parseRHS(RHS, RHSINode) :-
 	rdf(RHS, isa, literal('DeclRefExpr')),
 	rdf(RHS, hasDecl, Var),
 	RHSINode = Var, !.
 
-%% = *ref 
+%% = *ref
 parseRHS(RHS, RHSINode) :-
 	rdf(RHS, hasOperator, literal('*')),
 	rdf(RHS, hasSubExpr, DerefVarRef),
-	atom_concat(var, RHS, RHSINode),
+	atom_concat(tmp, RHS, RHSINode),
 	rdf(DerefVarRef, hasDecl, DerefVar),
 	insertFact([load, RHSINode, DerefVar]), !.
 
@@ -209,7 +208,7 @@ parseRHS(RHS, RHSINode) :-
 	rdf(RHS, hasBase, BaseRef),
 	rdf(BaseRef, hasDecl, Base),
 	rdf(RHS, hasMemberDecl, FldDecl),
-	atom_concat(var, RHS, RHSINode),
+	atom_concat(tmp, RHS, RHSINode),
 	insertFact([fieldLoad, RHSINode, Base, FldDecl]), !.
 
 %% = ref[]
@@ -217,23 +216,23 @@ parseRHS(RHS, RHSINode) :-
 	rdf(RHS, isa, literal('ArraySubscriptExpr')),
 	rdf(RHS, hasBase, BaseRef),
 	rdf(BaseRef, hasDecl, Base),
-	atom_concat(var, RHS, RHSINode),
+	atom_concat(tmp, RHS, RHSINode),
 	insertFact([arrayLoad, RHSINode, Base]), !.
 
 %% CallExpr
-%% = tmp; tmp = invoc(); 
+%% = tmp; tmp = invoc();
 %% tmp is abstracted by callsite/invocation
 parseRHS(RHS, RHSINode) :-
 	rdf(RHS, isa, literal('CallExpr')),
-	atom_concat(var, RHS, RHSINode), %% only a tmp node
-	insertFact(['actualReturn', RHS, RHSINode]). 
+	atom_concat(tmp, RHS, RHSINode), %% only a tmp node
+	insertFact(['actualReturn', RHS, RHSINode]).
 
 
 %% ------------------------------
 %% Unused, as backup for improvement
 %% ------------------------------
 
-%% @tdb 
+%% @tdb
 %% check type of expression
 %% checkType(LHS, Type) :- nl.
 
@@ -249,13 +248,13 @@ recursiveParseRHS(RHS, INode) :-
 %% alloc
 recursiveParseRHS(RHS, INode) :-
 	alloc(RHS, Heap),
-	atom_concat(var, RHS, INode),
+	atom_concat(tmp, RHS, INode),
 	insertFact([heapLoc, INode, Heap]), !.
 
-%% call 
+%% call
 recursiveParseRHS(RHS, INode) :-
 	rdf(RHS, isa, literal('CallExpr')),
-	atom_concat(var, RHS, INode),
+	atom_concat(tmp, RHS, INode),
 	insertFact(['actualReturn', RHS, INode]), !.
 
 %% = &Expr => = INode; stackLoc(INode, INode2);
@@ -263,7 +262,7 @@ recursiveParseRHS(RHS, INode) :-
 recursiveParseRHS(RHS, INode) :-
 	rdf(RHS, hasOperator, literal('&')),
 	rdf(RHS, hasSubExpr, Sub),
-	atom_concat(var, RHS, INode), 
+	atom_concat(tmp, RHS, INode),
 	recursiveParseRHS(Sub, INode2),
 	insertFact([stackLoc, INode, INode2]).
 
@@ -271,7 +270,7 @@ recursiveParseRHS(RHS, INode) :-
 recursiveParseRHS(RHS, INode) :-
 	rdf(RHS, hasOperator, literal('*')),
 	rdf(RHS, hasSubExpr, Sub),
-	atom_concat(var, RHS, INode),
+	atom_concat(tmp, RHS, INode),
 	recursiveParseRHS(Sub, INode2),
 	insertFact([load, INode, INode2]).
 
@@ -281,7 +280,7 @@ recursiveParseRHS(RHS, INode) :-
 	rdf(RHS, isa, literal('MemberExpr')),
 	rdf(RHS, hasBase, BaseRef),
 	rdf(RHS, hasMemberDecl, FldDecl),
-	atom_concat(var, RHS, INode),
+	atom_concat(tmp, RHS, INode),
 	recursiveParseRHS(BaseRef, INode2),
 	insertFact([fieldLoad, INode, INode2, FldDecl]).
 
@@ -290,6 +289,12 @@ recursiveParseRHS(RHS, INode) :-
 recursiveParseRHS(RHS, INode) :-
 	rdf(RHS, isa, literal('ArraySubscriptExpr')),
 	rdf(RHS, hasBase, BaseRef),
-	atom_concat(var, RHS, INode),
+	atom_concat(tmp, RHS, INode),
 	recursiveParseRHS(BaseRef, INode2),
 	insertFact([arrayLoad, INode, INode2]).
+
+
+%% to do
+% function pointer
+% multi dim array
+% type check and filter
