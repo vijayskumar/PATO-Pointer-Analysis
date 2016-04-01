@@ -58,7 +58,7 @@ Clang tooling frontend:
 	cat out.csv | csv2ntriples.py > out.trp
 	```
 
-2. (Iteractively) Run the pointer analysis inference program
+2. (Iteractively) Run the pointer analysis 
 
 	1. `main.pl` is the main entry to the program
 	
