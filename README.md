@@ -4,9 +4,8 @@ This program is a part of the project PATO (Program Analysis Through Ontology).
 
 In the PATO, we represent the information of program as knowledge base in the form of
 [Ontology](https://en.wikipedia.org/wiki/Ontology_(information_science)). Ontology
-captures the concepts like Structures (Declaration, Variable, etc)  
-and their relationships in `(subject predicate/relation object)` triples. 
-For example, 
+captures the concepts like Structures (Declaration, Variable, etc) and their relationships 
+in `(subject predicate/relation object)` triples. For example, 
 
 ```
 0 // s.c
@@ -34,7 +33,7 @@ The store file format for ontology can be RDF,
 [ntriples](https://www.w3.org/TR/n-triples/), 
 [turtle](https://www.w3.org/TR/turtle/), etc.
 
-We represent ontology because ontology is a standard format with logic semantics. We can leverage the
+We use ontology because it is a standard format with logic semantics. We can leverage the
 existing tool sets to process the knowledge base. In our projects, we utilize the 
 [Prolog](http://www.swi-prolog.org/) and the 
 [SWI-Prolog Semantic Web Library](www.swi-prolog.org/pldoc/package/semweb.html)
@@ -101,7 +100,7 @@ In this particular project, the structure is:
 **Install the Clang and Prolog**
 
 The C parser is built on top of Clang. The particular version used is Clang-3.7 and all the
-experiments are done under Ubuntu 16.04 (other versions of Clang or Ubuntu may also work). 
+experiments are done under Ubuntu 16.04 (other versions of Clang and Ubuntu may also work). 
 
 The Clang can be installed following the official instruction but a easy method under Debian/Ubuntu 
 is to use the apt repository http://llvm.org/apt/
@@ -110,7 +109,7 @@ The particular Prolog used is the [SWI-Prolog](http://www.swi-prolog.org/).
 
 ### Test and Run the PATO pointer analysis
 
-The following section demonstrates the usage with the `test/test0.c`. Assume it is in the root directory.
+The following section demonstrates the usage with the `test/test0.c`. Assume starting from the top directory.
 
 1. First, extract information from AST and build the knowledge base with te parser:
 	```
@@ -118,7 +117,7 @@ The following section demonstrates the usage with the `test/test0.c`. Assume it 
 	```
 	For the `--` and the `-I` part, check the `document/LibToolingNote.md`.
 
-2. Run the pointer analysis. Suppose do not use the `main.pl` script.
+2. Run the pointer analysis (not using the `main.pl` script).
 
 	1. Generate the basic constraint database
 	
@@ -131,9 +130,11 @@ The following section demonstrates the usage with the `test/test0.c`. Assume it 
 	
 		1. Run `swipl ../andersen_ptr/andersen_wl.pl` to load the required module and get into the REPL mode.
 	
-		2. run `constraintInit.` to initialize the worklist algorithm with basic constraints.
+		2. Run `['test0.c.trp.pl'].` to load the database and run `constraintInit.` to initialize the worklist algorithm with basic constraints.
 		
-		3. run `andersenPtr(0).` to start the pointer analysis. The iteration number is shown during the execution. 		After it is done, use `testPts(X, Y)` to check the result (enter `;` when pause for more results).
+		3. Run `andersenPtr(0).` to start the pointer analysis. The iteration number is shown during the execution. 		After it is done, use `testPts(X, Y).` to check the result (enter `;` when pause for more results).
+		
+	The last 2 steps can be replaced by `run('test0.c.trp.pl').`, which is just a shorthand predicate.
 	
 ### Extension
 
