@@ -37,7 +37,7 @@ The store file format for ontology can be RDF,
 We represent ontology because ontology is a standard format with logic semantics. We can leverage the
 existing tool sets to process the knowledge base. In our projects, we utilize the 
 [Prolog](http://www.swi-prolog.org/) and the 
-[SWI-Prolog Semantic Web Library](http://www.swi-prolog.org/pldoc/doc_for?object=section(%27packages/semweb.html%27)
+[SWI-Prolog Semantic Web Library](www.swi-prolog.org/pldoc/package/semweb.html)
 to parse and load the generated ontology knowledge base. Then we build different inference engines for different
 program analysis.
 
@@ -155,7 +155,7 @@ yzhao30@ncsu.edu
 
 ## LICENSE
 
-MIT License.
+MIT License. See [LICENSE](LICENSE).
 
 
 
