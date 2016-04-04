@@ -1,12 +1,13 @@
 #!/usr/bin/env swipl
-%% swipl --nosignals --quiet main.pl input.trp
+%% swipl --nosignals --quiet main.pl ../test/test.trp
 
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/rdf_ntriples)).
 
 :- set_prolog_flag(verbose, silent).
 
-:- ['preprocessing.pl'].
+% file loading path is relative to this module, not the invoking directory
+:- ['preprocessing.pl']. 
 :- ['andersen_wl.pl'].
 
 :- initialization main.
@@ -14,10 +15,12 @@
 
 eval :-
 	current_prolog_flag(argv, Arguments),
-	[Inputfile|_] = Arguments,
+	[Inputfile, Outputfile|_] = Arguments,
 	rdf_load(Inputfile, [format(ntriples)]),
-	%% build('out.pl'),
-    nl.
+	build(_), writeln('build done'), 
+	constraintInit, writeln('init done'), !,
+	(andersenPtr(0); true),	writeln('analysis done'),
+	nl.
 
 main :-
 	catch(eval, E, (print_message(error, E), fail)),

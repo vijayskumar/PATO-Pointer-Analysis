@@ -2,6 +2,7 @@
 %% :- module(preprocessing, [build/1, relationGen/1]).
 
 :- use_module(library(semweb/rdf_db)).
+:- use_module(library(semweb/rdf_ntriples)).
 
 :- dynamic heapLoc/2, stackLoc/2, copy/2,
 	load/2, fieldLoad/3, arrayLoad/2,
@@ -9,13 +10,30 @@
 	callProc/2, formalArg/3, actualArg/3,
 	formalReturn/2, actualReturn/2.
 
-%% # APIs
-%% Produce all the relations and optionally
-%% output the generated relations to file
-% Out: file name .pl
+%% ------------------------------
+%% public APIs
+%% ------------------------------
+
+:- initialization autoBuild.
+
+% For running this module as top script, i.e.,
+% $swipl preprocessing.pl Input.trp
+autoBuild :-
+	current_prolog_flag(argv, Arguments),
+	[Inputfile|_] = Arguments,
+	access_file(Inputfile, exist), % check file exist
+	rdf_load(Inputfile, [format(ntriples)]),
+	file_base_name(Inputfile, BaseName), % strip path 
+	atom_concat(BaseName, '.pl', Outputfile),
+	build(Outputfile), halt(0).
+
+% For calling as predicate 
+% Produce all the relations and optionally
+% output the generated relations to file
+% ?Out: output file name out.pl OR uninitialized (in-memory)
 build(Out) :-
 	forall(relationGen(_), put('.')), nl,
-	write('Successfully produce the relations'),
+	write('Successfully produce the relations'), nl,
 	(atom(Out) ->
 	telling(Old), tell(Out),
 	forall(member(P, [heapLoc, stackLoc, copy,
@@ -25,8 +43,9 @@ build(Out) :-
 		formalReturn, actualReturn]), listing(P)),
 	write('%%'), nl,
 	told, tell(Old)
+	; writeln('in-memory database')
 	).
-	
+
 %% ------------------------------
 %% relation build helper
 %% ------------------------------
@@ -39,6 +58,50 @@ insertFact(List) :-
 	assertz(Fact).
 
 %% ------------------------------
+%% Main predicates to generate relations
+%% ------------------------------
+
+%% $
+%% assignment
+relationGen(assignment) :-
+	assign(LHS, RHS), %% scan assignments
+	%% write(LHS), write('---'), nl, %% only for debug
+	parseLHS(LHS, ToRef, Relation), %% return ToRef and Relation
+	parseRHS(RHS, RHSINode), %% return temp node
+	%% Relation(ToRef, RHSINode)
+	append([Relation|ToRef], [RHSINode], Constrain),
+	insertFact(Constrain).
+
+%% $
+%% initialization
+%% @tbd more complex parse init list
+%% OR split int p = ... to int p; p = ...
+relationGen(initialization) :-
+	rdf(Decl, hasInit, Initializer),
+	parseRHS(Initializer, RHSINode),
+	insertFact([copy, Decl, RHSINode]).
+
+%% $
+%% An aggregate type is an array or a class type (struct, union, or class)
+%% treat struct as object, so its declaration as malloc
+%% treat array declaration as malloc
+relationGen(aggregateDecl) :-
+	rdf(Decl, hasTypeClass, literal('AggregateType')),
+	atom_concat(heap, Decl, HeapDecl),
+	insertFact([heapLoc, Decl, HeapDecl]).
+
+%% $
+%% function declaration
+relationGen(functionDecl) :-
+	rdf(Proc, isa, literal('Function')),
+	(procFormalArg(Proc); procFormalReturn(Proc)).
+
+%% $
+relationGen(functionCall) :-
+	rdf(Invoc, isa, literal('CallExpr')),
+	callRelation(Invoc).
+
+%% ------------------------------
 %% Some syntax helper
 %% ------------------------------
 
@@ -48,7 +111,7 @@ alloc(Expr, Heap) :-
 		rdf(Expr, calls, literal('malloc'));
 		rdf(Expr, calls, literal('alloca'));
 		rdf(Expr, calls, literal('calloc'))
-	), atom_concat(heap, Expr, Heap). %% Heap is abstracted(named) as callsite
+	), atom_concat(heap, Expr, Heap). %% Heap is abstracted by callsite
 
 %%
 assign(LHS, RHS) :-
@@ -73,96 +136,37 @@ procFormalReturn(Proc) :-
 	insertFact(['formalReturn', Proc, RHSINode]).
 
 %% +Invoc
-callGraph(Invoc) :-
-	rdf(Invoc, callsFunc, Proc),
+callRelation(Invoc) :-
+	rdf(Invoc, callsFunc, ProcDecl),
+	rdf(Proc, hasCanonicalDecl, ProcDecl), rdf(Proc, isa, literal('Definition')), % get the definition instead of declaration
 	insertFact([callProc, Invoc, Proc]),
 	rdf(Invoc, HasArg, ArgExpr),
 	atom_concat('hasArg(', X, HasArg),
 	atom_concat(Nth, ')', X),
 	%% parse ArgExpr
-	%% func(ArgExpr) =>
-	%% (INode = ArgExpr), func(INode)
+	%% func(ArgExpr) => (INode = ArgExpr), func(INode)
 	parseRHS(ArgExpr, RHSINode),
 	insertFact(['actualArg', Invoc, Nth, RHSINode]).
 
 %% ------------------------------
-%% Main predicates to generate relations
-%% ------------------------------
-
-%% $
-%% assignment
-relationGen(assignment) :-
-	assign(LHS, RHS), %% scan assignments
-	%% write(LHS), write('---'), nl, %% only for debug
-	parseLHS(LHS, ToRef, Relation), %% return ToRef and Relation
-	parseRHS(RHS, RHSINode), %% return temp node
-	%% Relation(ToRef, RHSINode)
-	append([Relation|ToRef], [RHSINode], Constrain),
-	insertFact(Constrain).
-
-%% $
-%% initialization
-%% @tbd more complex parse init list
-relationGen(initialization) :-
-	rdf(Decl, hasInit, Initializer),
-	parseRHS(Initializer, RHSINode),
-	insertFact([copy, Decl, RHSINode]).
-
-%% $
-%% An aggregate type is an array or a class type (struct, union, or class)
-%% treat struct as object, so its declaration as malloc
-%% treat array declaration as malloc
-relationGen(aggregateDecl) :-
-	rdf(Decl, hasTypeClass, literal('AggregateType')),
-	insertFact([heapLoc, Decl, heap(Decl)]).
-
-%% $
-%% function declaration
-relationGen(functionDecl) :-
-	rdf(Proc, isa, literal('Function')),
-	(procFormalArg(Proc); procFormalReturn(Proc)).
-
-%% $
-relationGen(functionCall) :-
-	rdf(Invoc, isa, literal('CallExpr')),
-	callGraph(Invoc).
-
-%% ------------------------------
 %% ParseLHS
 %% ------------------------------
-assignKind(reference, copy).
-assignKind(dereference, store).
-assignKind(member, fieldStore).
-assignKind(subscript, arrayStore).
-
 %% determine the relation based on LHS format
-relationKind(LHS, Relation) :-
-	rdf(LHS, isa, literal('DeclRefExpr')),
-	assignKind(reference, Relation).
-relationKind(LHS, Relation) :-
-	rdf(LHS, isa, literal('UnaryOperator')),
-	rdf(LHS, hasOperator, literal('*')),
-	assignKind(dereference, Relation).
-relationKind(LHS, Relation) :-
-	rdf(LHS, isa, literal('MemberExpr')),
-	assignKind(member, Relation).
-relationKind(LHS, Relation) :-
-	rdf(LHS, isa, literal('ArraySubscriptExpr')),
-	assignKind(subscript, Relation).
-
-%% +LHS, -ToRef, -Relation
-%% @tbd add type check
 parseLHS(LHS, ToRef, Relation) :-
-	relationKind(LHS, Relation),
 	(
-		Relation == copy
-		-> rdf(LHS, hasDecl, Decl),	ToRef = [Decl]
-		; Relation == store
-		-> rdf(LHS, hasSubExpr, DerefVarRef), rdf(DerefVarRef, hasDecl, DerefVar), ToRef = [DerefVar]
-		; Relation == fieldStore
-		-> rdf(LHS, hasBase, BaseExpr), rdf(LHS, hasMemberDecl, FldDecl), rdf(BaseExpr, hasDecl, BaseVar), ToRef = [BaseVar, FldDecl]
-		; Relation == arrayStore
-		-> rdf(LHS, hasBase, BaseExpr), rdf(BaseExpr, hasDecl, BaseVar), ToRef = [BaseVar]
+		%% a = 
+		rdf(LHS, isa, literal('DeclRefExpr'))
+		-> Relation = copy, rdf(LHS, hasDecl, Decl),	ToRef = [Decl]
+		%% dereference *a = 
+		; rdf(LHS, isa, literal('UnaryOperator')), 
+		rdf(LHS, hasOperator, literal('*'))
+		-> Relation = store, rdf(LHS, hasSubExpr, DerefVarRef), rdf(DerefVarRef, hasDecl, DerefVar), ToRef = [DerefVar]
+		%% member s.f = ...
+		; rdf(LHS, isa, literal('MemberExpr'))
+		-> Relation = fieldStore, rdf(LHS, hasBase, BaseExpr), rdf(LHS, hasMemberDecl, FldDecl), rdf(BaseExpr, hasDecl, BaseVar), ToRef = [BaseVar, FldDecl]
+		%% subscript a[i] = ...
+		; rdf(LHS, isa, literal('ArraySubscriptExpr'))
+		-> Relation = arrayStore, rdf(LHS, hasBase, BaseExpr), rdf(BaseExpr, hasDecl, BaseVar), ToRef = [BaseVar]
 	).
 
 %% ------------------------------

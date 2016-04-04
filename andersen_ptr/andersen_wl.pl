@@ -1,3 +1,5 @@
+%% :- module(andersen_wl, [andersenPtr/1, constraintInit/0, run/1]).
+
 % The worklist algorithm
 
 :- dynamic heapLoc/2, stackLoc/2, copy/2,
@@ -6,95 +8,122 @@
 	callProc/2, formalArg/3, actualArg/3,
 	formalReturn/2, actualReturn/2.
 
-:- dynamic wl/1, pedge/2, pts/2.
-% pedge(A, B), A -> B, for B = A
+:- dynamic wl/1, incedge/2, pts/2.
+% incedge : inclusion edge 
+% incedge(A, B), A -> B, for B = A
 
 % ----------------------------------
 % APIs
 % ----------------------------------
-% #
 
-%% \+ Input is the file name .pl storing 
+%% \+ Input is the file name .pl storing
 %% input relations
 run(Input) :-
-	[Input], init, andersenPtr(0).
- 
+	[Input], constraintInit, andersenPtr(0).
+
 % #
 andersenPtr(IterNumber) :-
 	wl(N), retract(wl(N)), % select N from W
 	write(IterNumber), nl,
 
-	solveComplex(N),
-	propagateEdge(N),
+	%% solve complex constraint
+	propagateLoad(N), !,
+	propagateStore(N), !,
+	propagateFieldLoad(N), !,
+	propagateFieldStore(N), !,
+	propagateArrayLoad(N), !,
+	propagateArrayStore(N), !,
+	%% propagate along the inclusion edge 
+	propagateEdge(N), !,
 
-	IterNumber2 is IterNumber + 1, !,
+	IterNumber2 is IterNumber + 1,
 	andersenPtr(IterNumber2).
 
 % ----------------------------------
 % Internal implementation
 % ----------------------------------
 
-%% init order is important
-% init points-to set from ground cases
+% init points-to constraints from assignment
+% init order is important
 % pts(N, V) :- heapLoc(N, V); stackLoc(N, V).
-init :-
+constraintInit :-
 	forall(stackLoc(N, V), (\+ pts(N, V) -> assertz(pts(N, V)); true)),
-	forall(heapLoc(N, V), (\+ pts(N, V) -> assertz(pts(N, V)); true)).
-% init worklist for each N with non-empty points-to set
-init :-
-	forall(pts(N, _), (\+ wl(N) -> assertz(wl(N)); true)).
-% init flow edge for each p = q
-init :-
-	forall(copy(To, From), (\+ pedge(From, To) -> assertz(pedge(From, To)); true)).
+	forall(heapLoc(N, V), (\+ pts(N, V) -> assertz(pts(N, V)); true)),
+	% init worklist for each N with non-empty points-to set
+	forall(pts(N, _), (\+ wl(N) -> assertz(wl(N)); true)),
+	% init flow edge for each p = q
+	forall(copy(To, From), (\+ incedge(From, To) -> assertz(incedge(From, To)); true)),
+	forall(interProcAssign(To, From), (\+ incedge(From, To) -> assertz(incedge(From, To)); true)).
 
-% Complex constraint
-% +N
-solveComplex(N) :-
-	propagateLoad(N);
-	propagateStore(N);
-	propagateFieldLoad(N);
-	propagateFieldStore(N)
-	.
-solveComplex(_) :-
-	true.
 
+interProcAssign(To, From) :-
+	callProc(Invoc, Proc),
+	formalArg(Proc, Nth, To),
+	actualArg(Invoc, Nth, From).
+interProcAssign(To, From) :-
+	callProc(Invoc, Proc),
+	formalReturn(Proc, From),
+	actualReturn(Invoc, To).
+
+%% +N 
 % for any node with outgoing edge, add to worklist
-% +N, +V
 % for each input constraint A = *N
 propagateLoad(N) :-
-	load(A, N), 
+	load(A, N),
 	pts(N, V),  % for each V \in pts(N)
-	(\+ pedge(V, A) -> assertz(pedge(V, A)), unionWL(V)
-	).
+	(\+ incedge(V, A) -> assertz(incedge(V, A)), unionWL(V)
+		), fail. % fail is important to repeat search in current step 
+propagateLoad(_) :- true.
+
 % for each constraint *N = B
 propagateStore(N) :-
-	store(N, B), 
+	store(N, B),
 	pts(N, V),
-	(\+ pedge(B, V) -> assertz(pedge(B, V)), unionWL(B)
-	).
+	(\+ incedge(B, V) -> assertz(incedge(B, V)), unionWL(B)
+		), fail.
+propagateStore(_) :- true.
+
 % A = N.f
 propagateFieldLoad(N) :-
-	fieldLoad(A, N, Fld), 
+	fieldLoad(A, N, Fld),
 	pts(N, V),
-	(\+ pedge(record(V, Fld), A) 
-		-> assertz(pedge(record(V, Fld), A)), 
+	(\+ incedge(record(V, Fld), A)
+		-> assertz(incedge(record(V, Fld), A)),
 		unionWL(record(V, Fld))
-		).
+	), fail.
+propagateFieldLoad(_) :- true.
+
 % N.f = B
 propagateFieldStore(N) :-
 	fieldStore(N, Fld, B),
 	pts(N, V),
-	(\+ pedge(B, record(V, Fld))
-		-> assertz(pedge(B, record(V, Fld))),
+	(\+ incedge(B, record(V, Fld))
+		-> assertz(incedge(B, record(V, Fld))),
 		unionWL(B)
-		).
+	), fail.
+propagateFieldStore(_) :- true.
+
+% A = N[i]
+propagateArrayLoad(N) :-
+	arrayLoad(A, N),
+	pts(N, V),
+	(\+ incedge(V, A) -> assertz(incedge(V, A)), unionWL(V)
+		), fail.
+propagateArrayLoad(_) :- true.
+
+% N[i] = B
+propagateArrayStore(N) :-
+	arrayStore(N, B),
+	pts(N, V),
+	(\+ incedge(B, V) -> assertz(incedge(B, V)), unionWL(B)
+		), fail.
+propagateArrayStore(_) :- true.
 
 % points-to propagation
-% +N
 propagateEdge(N) :-
-	pedge(N, Z), % for each N -> Z
+	incedge(N, Z), % for each N -> Z
 	unionPts(Z, N, Changed),
-	(Changed == true -> unionWL(Z)).
+	(Changed == true -> unionWL(Z)), fail.
 propagateEdge(_) :- true.
 
 % ----------------------------------
@@ -109,12 +138,13 @@ unionPts(Y, X, Changed) :-
 
 % if X is not in worklist, insert it
 unionWL(X) :-
-	\+ wl(X) -> assertz(wl(X)).
+	(\+ wl(X) -> assertz(wl(X))).
 
 % ----------------------------------
 % For debug only
 % ----------------------------------
 testPts(X, Y) :-
-	pts(X, Y), \+ atom_prefix(X, 'tmp').
-
+	pts(X, Y),
+	(atom(X) -> \+ atom_prefix(X, 'tmp');
+		true).
 

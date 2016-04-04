@@ -1,0 +1,51 @@
+?- constraintInit.
+true.
+
+?- testPts(X, Y).
+X = 'Var(12:2:12:12)',
+Y = 'heapVar(12:2:12:12)' ;
+X = 'Var(12:2:12:17)',
+Y = 'heapVar(12:2:12:17)' ;
+X = 'Var(12:2:12:28)',
+Y = 'heapVar(12:2:12:28)'.
+
+?- andersenPtr(0).
+
+X = 'Var(12:2:12:12)',
+Y = 'heapVar(12:2:12:12)' ;
+X = 'Var(12:2:12:17)',
+Y = 'heapVar(12:2:12:17)' ;
+X = 'Var(12:2:12:28)',
+Y = 'heapVar(12:2:12:28)' ;
+
+X = 'Var(11:2:11:12)', p2
+Y = 'Var(10:2:10:10)' ; a2
+X = 'Var(12:2:12:23)', stp
+Y = 'Var(12:2:12:17)' ; st2
+X = 'Var(11:2:11:12)', p2
+Y = 'Var(10:2:10:14)' ; a3
+X = 'Var(12:2:12:17)', st2
+Y = 'heapVar(12:2:12:12)' ; st1 heap
+X = record('heapVar(12:2:12:12)', 'Field(5:2:5:7)'), st1.f1
+Y = 'Var(10:2:10:6)' ; a1
+X = record('heapVar(12:2:12:17)', 'Field(5:2:5:7)'), st2.f1
+Y = 'Var(10:2:10:14)' ; a3
+X = record('heapVar(12:2:12:12)', 'Field(5:2:5:7)'), st1.f1
+Y = 'Var(10:2:10:14)' ; a3
+X = record('Var(12:2:12:17)', 'Field(6:2:6:7)'), st2.f2
+Y = 'Var(10:2:10:10)' ; a2
+X = record('Var(12:2:12:17)', 'Field(6:2:6:7)'),
+Y = 'Var(10:2:10:14)' ; a3
+X = 'Var(12:2:12:28)', st3
+Y = 'heapVar(12:2:12:17)' ; st2 heap
+X = 'Var(12:2:12:28)', st3
+Y = 'heapVar(12:2:12:12)' ; st1 heap
+X = 'Var(11:2:11:7)', p1
+Y = 'Var(10:2:10:6)' ; a1
+X = 'Var(11:2:11:7)', p1
+Y = 'Var(10:2:10:14)'. a3
+
+
+
+
+

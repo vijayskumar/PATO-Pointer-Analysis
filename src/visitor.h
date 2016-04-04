@@ -117,10 +117,16 @@ public:
 	bool VisitFunctionDecl(FunctionDecl *FD) {
 		//FD->dump();
 		currentFunction = FD;
-		if (FD->isMain()) {
-			llvm::outs() << currentId << ", isa, " << "MainFunction\n";
+
+		FunctionDecl *CFD = FD->getCanonicalDecl();
+		if (CFD) {
+			llvm::outs() << currentId << ", hasCanonicalDecl, " << genId(CFD) << "\n";
 		}
-		// isDefined -> bool
+		
+		if (FD->isThisDeclarationADefinition()) {
+			llvm::outs() << currentId << ", isa, Definition\n";
+		}
+
 		if (FD->hasBody()) {
 			Stmt *body = FD->getBody();
 			if (body) {
@@ -135,7 +141,10 @@ public:
 
 		QualType QT = FD->getReturnType();
 		// llvm::outs() << currentId << ", hasReturnType, " << QT.getAsString() << "\n";
-		// FunctionDecl *CFD = FD->getCanonicalDecl();
+
+		if (FD->isMain()) {
+			llvm::outs() << currentId << ", isa, " << "MainFunction\n";
+		}
 		return true; 
 	}
 	// ---->
@@ -150,7 +159,6 @@ public:
 			llvm::outs() << currentId << ", hasCanonicalDecl, " << genId(CVDecl) << "\n";
 		}
 		// hasLocalStorage()
-		// isThisDeclarationADefinition()
 		VarDecl *VDef = VDecl->getDefinition();
 		if (VDef) {
 			llvm::outs() << currentId << ", hasDefinition, " << genId(VDef) << "\n";

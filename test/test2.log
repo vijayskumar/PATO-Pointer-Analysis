@@ -1,0 +1,19 @@
+X = 'Var(5:2:5:7)', pa
+Y = 'Var(4:2:4:6)' ; a
+X = 'Var(5:2:5:12)', pb
+Y = 'Var(4:2:4:9)' ; b
+X = 'Var(6:2:6:47)', parr
+Y = 'heapCallExpr(6:23:6:47)' ;
+
+X = 'heapCallExpr(6:23:6:47)',
+Y = 'Var(4:2:4:6)' ; a
+X = 'heapCallExpr(6:23:6:47)',
+Y = 'Var(4:2:4:9)' ; b
+X = 'heapCallExpr(6:23:6:47)',
+Y = 'Var(4:2:4:12)' ; c
+X = 'Var(5:2:5:17)', pc
+Y = 'Var(4:2:4:6)' ; a
+X = 'Var(5:2:5:17)', pc
+Y = 'Var(4:2:4:9)' ; b
+X = 'Var(5:2:5:17)', pc
+Y = 'Var(4:2:4:12)'. c
