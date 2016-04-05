@@ -145,8 +145,7 @@ Andersen's pointer analysis, check `andersen_wl.pl`. Otherwise, you can write ne
 
 ## Publication
 
-The related paper is under reveiw by ECOOP 2016 and it will be released once decision is made.
-
+The related paper "Towards Ontology-Based Program Analysis" is accepted by ECOOP 2016.
 
 ## Contact
 
