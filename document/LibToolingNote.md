@@ -159,8 +159,11 @@ http://stackoverflow.com/questions/30805595/how-to-traverse-clang-ast-manually
 
 http://stackoverflow.com/questions/28048486/how-to-exclude-headers-from-ast-in-clang
 
-	
-	
+Clang AST Visitor Design	
+http://clang-developers.42468.n3.nabble.com/new-design-of-RecursiveASTVisitor-td871799.html	
+
+Understanding Clang AST
+https://jonasdevlieghere.com/understanding-the-clang-ast/
 	
 [TOC]	
 	

@@ -5,7 +5,9 @@
 CXX = g++
 CXXFLAGS = -fno-rtti -O0 -g -std=c++11 #-DANDERSEN
 
-LLVM_CONFIG ?= llvm-config-3.7
+LLVM_CONFIG ?= llvm-config-3.8
+LLVM_VERSION := `$(LLVM_CONFIG) --version`
+LLVM_INCLUDE := -I`$(LLVM_CONFIG) --prefix`/lib/clang/$(LLVM_VERSION)/include
 LLVM_SRC_PATH := `$(LLVM_CONFIG) --src-root`
 LLVM_BUILD_PATH := `$(LLVM_CONFIG) --obj-root`
 
@@ -46,7 +48,7 @@ all : env $(objs)
 env: 
 	@command -v $(LLVM_CONFIG) > /dev/null 2>&1 \
 	 || { echo >&2 "Could not detect $(LLVM_CONFIG), \
-	please set LLVM_CONFIG to correct llvm-config-3.7. \
+	please set LLVM_CONFIG to correct llvm-config-3.x \
 	Aabort."; exit 1; }
 
 $(BIN)sample : $(SRC)sample.cpp
@@ -61,8 +63,8 @@ $(BIN)$(TRANSLATOR) : $(SRC)$(TRANSLATOR).cpp $(SRC)visitor.h
 
 .PHONY : test
 test : $(BIN)$(TRANSLATOR)
-	@$(BIN)$(TRANSLATOR) $(TEST)test.c -- -Wall -I/usr/lib/llvm-3.7/lib/clang/3.7.1/include
-	
+	@$(BIN)$(TRANSLATOR) $(TEST)test.c -- -Wall $(LLVM_INCLUDE)
+
 .PHONY : clean
 clean :
 	rm -rf $(SRC)*.o $(SRC)*.ll $(objs) $(BIN)*.out
