@@ -422,8 +422,10 @@ private:
 	template<typename NodeType>
 	std::string getLoc(NodeType *s) {
 		std::ostringstream idss;
-		clang::FullSourceLoc FL = Context->getFullLoc(s->getLocStart()),
-			FLE = Context->getFullLoc(s->getLocEnd());
+		//clang::FullSourceLoc FL = Context->getFullLoc(s->getLocStart()),
+		clang::FullSourceLoc FL = Context->getFullLoc(s->getBeginLoc()),
+			FLE = Context->getFullLoc(s->getEndLoc());
+			//FLE = Context->getFullLoc(s->getLocEnd());
 		if (FL.isValid() && FLE.isValid()) {
 			idss << FL.getSpellingLineNumber() << ":" << FL.getSpellingColumnNumber()
 				<< ":" << FLE.getSpellingLineNumber() << ":" << FLE.getSpellingColumnNumber();

@@ -35,7 +35,8 @@ public:
 
 	bool VisitFunctionDecl(FunctionDecl *f) {
 		// f->dump();
-		clang::FullSourceLoc FL = Context->getFullLoc(f->getLocStart());
+		//clang::FullSourceLoc FL = Context->getFullLoc(f->getLocStart());
+		clang::FullSourceLoc FL = Context->getFullLoc(f->getBeginLoc());
 		if (FL.isValid()) {
 			llvm::errs() << "Found declaration at " 
 				<< FL.getSpellingLineNumber() << ":"
@@ -66,10 +67,14 @@ public:
 		llvm::errs() << "Found TypeLoc here\n";
 		SourceManager& sm = Context->getSourceManager();
 		llvm::errs() 
-			<< "<" << sm.getSpellingLineNumber(TL.getLocStart())
-			<< ":" << sm.getSpellingColumnNumber(TL.getLocStart())
-			<< ":" << sm.getSpellingLineNumber(TL.getLocEnd())
-			<< ":" << sm.getSpellingColumnNumber(TL.getLocEnd())
+			<< "<" << sm.getSpellingLineNumber(TL.getBeginLoc())
+			<< ":" << sm.getSpellingColumnNumber(TL.getBeginLoc())
+			<< ":" << sm.getSpellingLineNumber(TL.getEndLoc())
+			<< ":" << sm.getSpellingColumnNumber(TL.getEndLoc())
+			//<< "<" << sm.getSpellingLineNumber(TL.getLocStart())
+			//<< ":" << sm.getSpellingColumnNumber(TL.getLocStart())
+			//<< ":" << sm.getSpellingLineNumber(TL.getLocEnd())
+			//<< ":" << sm.getSpellingColumnNumber(TL.getLocEnd())
 			<< ">\n";
 		QualType qt = TL.getType();
 		return true;

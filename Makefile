@@ -5,7 +5,7 @@
 CXX = g++
 CXXFLAGS = -fno-rtti -O0 -g -std=c++11 #-DANDERSEN
 
-LLVM_CONFIG ?= llvm-config-3.8
+LLVM_CONFIG ?= llvm-config-11
 LLVM_VERSION := `$(LLVM_CONFIG) --version`
 LLVM_INCLUDE := -I`$(LLVM_CONFIG) --prefix`/lib/clang/$(LLVM_VERSION)/include
 LLVM_SRC_PATH := `$(LLVM_CONFIG) --src-root`
