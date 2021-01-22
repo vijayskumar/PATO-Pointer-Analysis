@@ -181,8 +181,20 @@ public:
 	bool VisitStmt(Stmt *s) {
 		currentId = genId(s);
 		//s->dump();
+		std::string stmt;
+		llvm::raw_string_ostream stream(stmt);
 		llvm::outs() << currentId << ", isa, " << s->getStmtClassName() << "\n";
 				
+		if (currentId.find("FloatingLiteral") == 0 ||
+		    currentId.find("IntegerLiteral") == 0) {
+			s->dump(stream, *Context);
+			std::istringstream i(stmt);
+			std::string token;
+			while (getline(i, token, ' ')) {
+				;
+			}
+			llvm::outs() << currentId << ",hasValue," << token;
+		}
 		return true;
 	}
 
